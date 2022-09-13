@@ -1,0 +1,48 @@
+---
+title: "Stats_for_large_data_Programming_Challenge"
+output: html_document
+date: "2022-09-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Desktop/Grad_School/BSD-QBio8-main/tutorials/stats_for_large_data")
+```
+
+
+Loading Libraries and Data
+```{r}
+library(tidyverse)
+data <- read.csv('owid-covid-data.csv') #reading in the data
+europe_21 <- data %>% filter(continent == 'Europe', grepl("2021", date)) #selecting for Europe and the year 2021
+```
+You may choose one or a few countries, or select one or some dates for analysis or for comparison.
+The challenge is to build an analysis pipeline that produces a “significant” p-value for a relationship between COVID-19 cases and another variable, where the relationship is nonsensical, cannot possibly be causal, or could be argued either way. You may even simulate a fake variable as your key variable of interest. Prepare an Rmarkdown document with the results.
+
+
+Testing whether levels of extreme poverty in nations is correlated with new cases of COVID-19. If we include all countries, the number of cases per capita is not correlated with levels of extreme poverty.
+```{r}
+europe_21_test2 <- europe_21 %>%  #UNFILTERED DATASET
+  group_by(location) %>%  #grouping by country
+  summarize(case_per_place = mean(new_cases), extreme_poverty = mean(extreme_poverty), case_per_capita = mean(new_cases/population))  # getting one row per location with cases per capita and extreme poverty
+
+poor_test2 <- lm(case_per_capita ~ extreme_poverty, europe_21_test2)
+summary(poor_test2)
+
+```
+
+If we filter to include only the richest countries, then cases per capita are significantly correlated with cases of COVID-19 per capita.
+
+```{r}
+europe_21_test1 <- europe_21 %>%  #FILTERED DATASET
+  group_by(location) %>% #grouping by country
+  summarize(case_per_place = mean(new_cases), extreme_poverty = mean(extreme_poverty), case_per_capita =  mean(new_cases/population)) %>%  # getting one row per location with cases per capita and extreme poverty
+  filter(extreme_poverty < 1) # filtering for only the richest countries
+
+poor_test1 <- lm(case_per_capita ~ extreme_poverty, europe_21_test1)
+summary(poor_test1)
+```
+
+
+We chose to analyze the relationship between the rate of extreme poverty and COVID cases in European countries in 2021. In order to get a significant result, we changed the new cases variable to be mean new cases per day per capita over the entire year. This changing of the variable lead to closer to significant p-values than when just measuring average new cases per day. We then chose to filter out all of the poorest countries by removing countries with a extreme poverty of greater than 1. This cutoff was completely arbitrary and removing the poorest countries is not a justifiable scientific decision if attempting to analyze the effect of poverty on COVID cases. When looking at only the richest countries, there was a significant relationship between extreme poverty and average new cases per day per capita over 2021.
+
